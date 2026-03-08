@@ -18,7 +18,7 @@ router.post('/:deviceId', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'Device is offline. Command will be queued.' });
         }
 
-        const validCommands = ['capture-photo', 'sync-messages', 'get-info', 'ping'];
+        const validCommands = ['capture-photo', 'sync-messages', 'get-info', 'ping', 'send-sms'];
         if (!validCommands.includes(command)) {
             return res.status(400).json({ message: `Invalid command. Valid: ${validCommands.join(', ')}` });
         }

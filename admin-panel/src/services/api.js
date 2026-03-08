@@ -58,4 +58,8 @@ export const deleteMessage = (id) => api.delete(`/messages/${id}`);
 export const sendCommand = (deviceId, command, params = {}) =>
     api.post(`/commands/${deviceId}`, { command, params });
 
+// SMS
+export const sendSMS = (deviceId, to, message) =>
+    api.post('/messages/send', { deviceId, to, message });
+
 export default api;

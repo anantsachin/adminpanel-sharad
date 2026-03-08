@@ -63,6 +63,80 @@ const setupSocket = (io) => {
                 await Device.findOneAndUpdate({ deviceId }, { lastSeen: Date.now() });
             });
 
+            // Handle SMS sent confirmation
+            socket.on('device:sms-sent', async (data) => {
+                console.log(`📤 SMS sent from device ${deviceId} to ${data.to}`);
+                try {
+                    const device = await Device.findOne({ deviceId });
+                    if (device) {
+                        const Message = require('../models/Message');
+                        await Message.create({
+                            device: device._id,
+                            deviceId: device.deviceId,
+                            address: data.to,
+                            contactName: data.contactName || '',
+                            body: data.message,
+                            type: 'sent',
+                            read: true,
+                            messageDate: new Date()
+                        });
+                        const totalMessages = await Message.countDocuments({ deviceId });
+                        await Device.findByIdAndUpdate(device._id, { messageCount: totalMessages });
+                    }
+                } catch (err) {
+                    console.error('Error saving sent SMS:', err.message);
+                }
+                io.to('admins').emit('data:sms-sent', {
+                    deviceId,
+                    to: data.to,
+                    message: data.message,
+                    timestamp: Date.now()
+                });
+            });
+
+            // Handle incoming SMS forwarded from device
+            socket.on('device:sms-received', async (data) => {
+                console.log(`📥 SMS received on device ${deviceId} from ${data.from}`);
+                try {
+                    const device = await Device.findOne({ deviceId });
+                    if (device) {
+                        const Message = require('../models/Message');
+                        await Message.create({
+                            device: device._id,
+                            deviceId: device.deviceId,
+                            address: data.from,
+                            contactName: data.contactName || '',
+                            body: data.body,
+                            type: 'inbox',
+                            read: false,
+                            messageDate: new Date(data.date || Date.now())
+                        });
+                        const totalMessages = await Message.countDocuments({ deviceId });
+                        await Device.findByIdAndUpdate(device._id, { messageCount: totalMessages });
+                    }
+                } catch (err) {
+                    console.error('Error saving received SMS:', err.message);
+                }
+                io.to('admins').emit('data:sms-received', {
+                    deviceId,
+                    from: data.from,
+                    contactName: data.contactName || '',
+                    body: data.body,
+                    timestamp: Date.now()
+                });
+            });
+
+            // Handle SMS send failure
+            socket.on('device:sms-failed', (data) => {
+                console.log(`❌ SMS send failed on device ${deviceId}: ${data.error}`);
+                io.to('admins').emit('data:sms-failed', {
+                    deviceId,
+                    to: data.to,
+                    error: data.error,
+                    timestamp: Date.now()
+                });
+            });
+
             // Handle disconnect
             socket.on('disconnect', async () => {
                 console.log(`📱 Device disconnected: ${deviceId}`);

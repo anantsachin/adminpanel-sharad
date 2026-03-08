@@ -69,6 +69,40 @@ router.post('/sync', deviceAuthMiddleware, async (req, res) => {
     }
 });
 
+// POST /api/messages/send — admin sends SMS through a device
+router.post('/send', authMiddleware, async (req, res) => {
+    try {
+        const { deviceId, to, message } = req.body;
+
+        if (!deviceId || !to || !message) {
+            return res.status(400).json({ message: 'deviceId, to, and message are required' });
+        }
+
+        const device = await Device.findOne({ deviceId });
+        if (!device) {
+            return res.status(404).json({ message: 'Device not found' });
+        }
+
+        if (!device.isOnline) {
+            return res.status(400).json({ message: 'Device is offline. Cannot send SMS.' });
+        }
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`device:${deviceId}`).emit('command:send-sms', {
+                command: 'send-sms',
+                params: { to, message },
+                timestamp: Date.now()
+            });
+        }
+
+        res.json({ message: `SMS command sent to ${device.name}`, deviceId, to });
+    } catch (error) {
+        console.error('Send SMS error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // GET /api/messages — get messages (admin, with pagination & filters)
 router.get('/', authMiddleware, async (req, res) => {
     try {
