@@ -125,7 +125,7 @@ export default function DeviceDetail() {
                                 {photos.map((photo) => (
                                     <div key={photo._id} className="photo-item" onClick={() => setLightbox(photo)}>
                                         <img
-                                            src={`http://localhost:5001${photo.path}`}
+                                            src={`https://adminpanel-sharad.onrender.com${photo.path}`}
                                             alt={photo.originalName}
                                             loading="lazy"
                                         />
@@ -248,7 +248,7 @@ export default function DeviceDetail() {
             {lightbox && (
                 <div className="lightbox" onClick={() => setLightbox(null)}>
                     <button className="lightbox-close" onClick={() => setLightbox(null)}>✕</button>
-                    <img src={`http://localhost:5001${lightbox.path}`} alt={lightbox.originalName} />
+                    <img src={`https://adminpanel-sharad.onrender.com${lightbox.path}`} alt={lightbox.originalName} />
                     <div className="lightbox-info">
                         <p>{lightbox.originalName} • {(lightbox.size / 1024).toFixed(1)} KB • {new Date(lightbox.createdAt).toLocaleString()}</p>
                     </div>

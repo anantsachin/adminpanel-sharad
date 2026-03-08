@@ -6,8 +6,8 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            '/api': 'http://localhost:5001',
-            '/uploads': 'http://localhost:5001',
+            '/api': 'https://adminpanel-sharad.onrender.com',
+            '/uploads': 'https://adminpanel-sharad.onrender.com',
         }
     }
 })

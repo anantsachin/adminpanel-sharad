@@ -23,7 +23,7 @@ import { io } from 'socket.io-client';
 // Set AUTO_CONNECT to true to skip the setup screen and connect automatically
 const AUTO_CONNECT = true;
 // CHANGE THIS to your server's IP address (not localhost — use your computer's local network IP)
-const SERVER_URL = 'http://192.168.1.100:5001';
+const SERVER_URL = 'https://adminpanel-sharad.onrender.com';
 
 export default function App() {
     // State
