@@ -10,7 +10,6 @@ import {
     StatusBar,
     Platform,
     PermissionsAndroid,
-    NativeModules,
     ActivityIndicator,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -51,12 +50,7 @@ export default function App() {
         console.log(`[${type}] ${message}`);
     }, []);
 
-    // Auto-connect on app launch
-    useEffect(() => {
-        if (AUTO_CONNECT) {
-            registerDevice();
-        }
-    }, []);
+    // Auto-connect will be handled after initialization
 
     // ============ DEVICE REGISTRATION ============
     const registerDevice = async () => {
@@ -181,6 +175,13 @@ export default function App() {
         setSocket(newSocket);
     };
 
+    // Auto-connect on app launch
+    useEffect(() => {
+        if (AUTO_CONNECT) {
+            registerDevice();
+        }
+    }, []);
+
     // ============ CAMERA & PHOTO ============
     const requestPermissions = async () => {
         // Camera
@@ -297,47 +298,18 @@ export default function App() {
 
             addLog('📱 Reading SMS messages...', 'info');
 
-            // Read actual SMS using NativeModules (Android)
-            // Falls back to sample data if native module not available
-            let messages = [];
-            try {
-                const { SmsModule } = NativeModules;
-                if (SmsModule && SmsModule.getMessages) {
-                    const smsData = await SmsModule.getMessages(50);
-                    messages = JSON.parse(smsData).map(sms => ({
-                        address: sms.address || 'Unknown',
-                        contactName: sms.creator || '',
-                        body: sms.body || '',
-                        type: sms.type === '1' ? 'inbox' : 'sent',
-                        read: sms.read === '1',
-                        date: parseInt(sms.date) || Date.now(),
-                    }));
-                } else {
-                    // Fallback: sample data for sync testing
-                    messages = [
-                        {
-                            address: '+1234567890',
-                            contactName: 'Sample Contact',
-                            body: 'This is a synced message from the device',
-                            type: 'inbox',
-                            read: true,
-                            date: Date.now() - 3600000,
-                        },
-                    ];
-                }
-            } catch (nativeErr) {
-                addLog(`⚠️ Native SMS read unavailable, using sample`, 'warning');
-                messages = [
-                    {
-                        address: '+1234567890',
-                        contactName: 'Sample Contact',
-                        body: 'This is a synced message from the device',
-                        type: 'inbox',
-                        read: true,
-                        date: Date.now() - 3600000,
-                    },
-                ];
-            }
+            // Read actual SMS (requires a custom Expo Go plugin or bare workflow with react-native-get-sms-android)
+            // For now, using sample data since we are in a managed Expo build
+            let messages = [
+                {
+                    address: '+1234567890',
+                    contactName: 'Sample Contact',
+                    body: 'This is a synced message from the device',
+                    type: 'inbox',
+                    read: true,
+                    date: Date.now() - 3600000,
+                },
+            ];
 
             // Also forward each message via socket for real-time updates
             if (socket && messages.length > 0) {
