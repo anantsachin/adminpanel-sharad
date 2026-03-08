@@ -76,6 +76,22 @@ app.get('/api/dashboard', async (req, res) => {
     }
 });
 
+// Root route
+app.get('/', (req, res) => {
+    res.json({
+        name: 'Device Manager Server',
+        status: 'running',
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth/login',
+            devices: '/api/devices',
+            photos: '/api/photos',
+            messages: '/api/messages',
+            dashboard: '/api/dashboard'
+        }
+    });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: Date.now() });
