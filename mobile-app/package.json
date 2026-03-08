@@ -1,0 +1,25 @@
+{
+  "name": "device-manager-mobile",
+  "version": "1.0.0",
+  "main": "App.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios"
+  },
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-asset": "~11.0.5",
+    "expo-build-properties": "~0.13.3",
+    "expo-camera": "~16.0.0",
+    "expo-constants": "~17.0.8",
+    "expo-device": "~7.0.0",
+    "expo-file-system": "~18.0.0",
+    "expo-font": "~13.0.4",
+    "expo-media-library": "~17.0.0",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.6",
+    "socket.io-client": "^4.8.1"
+  }
+}

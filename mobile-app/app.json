@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Device Manager",
+    "slug": "device-manager-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0e1a"
+    },
+    "android": {
+      "kotlinVersion": "1.9.25",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0e1a"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_SMS",
+        "READ_CONTACTS",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "package": "com.devicemanager.mobile"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.devicemanager.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access to capture photos on command.",
+        "NSPhotoLibraryUsageDescription": "This app needs photo library access to save captured photos."
+      }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ],
+      "expo-camera",
+      "expo-media-library",
+      "expo-asset",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "92ac1549-26b5-4a82-ac66-272897591790"
+      }
+    },
+    "owner": "anant45"
+  }
+}
