@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { getPhotos, getDevices, deletePhoto } from '../services/api';
 import { HiOutlineSearch, HiOutlineTrash } from 'react-icons/hi';
+import { SocketContext } from '../contexts/SocketContext';
 
 export default function Photos() {
     const [photos, setPhotos] = useState([]);
@@ -10,6 +11,8 @@ export default function Photos() {
     const [totalPages, setTotalPages] = useState(1);
     const [lightbox, setLightbox] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const socket = useContext(SocketContext);
 
     const fetchPhotos = async () => {
         try {
@@ -36,6 +39,17 @@ export default function Photos() {
 
     useEffect(() => { fetchDevices(); }, []);
     useEffect(() => { fetchPhotos(); }, [filter, page]);
+
+    // Real-time photo updates
+    useEffect(() => {
+        if (!socket) return;
+        const onPhotoUploaded = () => {
+            fetchPhotos();
+            fetchDevices();
+        };
+        socket.on('data:photo-uploaded', onPhotoUploaded);
+        return () => socket.off('data:photo-uploaded', onPhotoUploaded);
+    }, [socket, filter, page]);
 
     const handleDelete = async (id) => {
         if (!confirm('Delete this photo?')) return;

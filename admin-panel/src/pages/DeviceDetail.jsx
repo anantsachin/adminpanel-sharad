@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getDevice, getPhotos, getConversations, getThread, sendCommand } from '../services/api';
+import { SocketContext } from '../contexts/SocketContext';
 import {
     HiOutlineArrowLeft,
     HiOutlineCamera,
@@ -20,8 +21,9 @@ export default function DeviceDetail() {
     const [lightbox, setLightbox] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetch = async () => {
+    const socket = useContext(SocketContext);
+
+    const fetchDeviceData = async () => {
             try {
                 const { data: dev } = await getDevice(id);
                 setDevice(dev);
@@ -37,8 +39,37 @@ export default function DeviceDetail() {
                 setLoading(false);
             }
         };
-        fetch();
+
+    useEffect(() => {
+        fetchDeviceData();
     }, [id]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handlePhotoUploaded = (data) => {
+            if (data.deviceId === device?.deviceId) {
+                fetchDeviceData();
+                alert('📸 New photo arrived!');
+            }
+        };
+
+        const handleMessagesSynced = (data) => {
+            if (data.deviceId === device?.deviceId) {
+                fetchDeviceData();
+                if (selectedConvo) loadThread(selectedConvo);
+                alert(`💬 Synced ${data.synced} new messages!`);
+            }
+        };
+
+        socket.on('data:photo-uploaded', handlePhotoUploaded);
+        socket.on('data:messages-synced', handleMessagesSynced);
+
+        return () => {
+            socket.off('data:photo-uploaded', handlePhotoUploaded);
+            socket.off('data:messages-synced', handleMessagesSynced);
+        };
+    }, [socket, device, selectedConvo]);
 
     const loadThread = async (address) => {
         setSelectedConvo(address);
