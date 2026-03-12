@@ -24,21 +24,21 @@ export default function DeviceDetail() {
     const { socket } = useSocket();
 
     const fetchDeviceData = async () => {
-            try {
-                const { data: dev } = await getDevice(id);
-                setDevice(dev);
+        try {
+            const { data: dev } = await getDevice(id);
+            setDevice(dev);
 
-                const { data: photoData } = await getPhotos({ deviceId: dev.deviceId, limit: 50 });
-                setPhotos(photoData.photos);
+            const { data: photoData } = await getPhotos({ deviceId: dev.deviceId, limit: 50 });
+            setPhotos(photoData.photos);
 
-                const { data: convos } = await getConversations(dev.deviceId);
-                setConversations(convos);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
+            const { data: convos } = await getConversations(dev.deviceId);
+            setConversations(convos);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetchDeviceData();
