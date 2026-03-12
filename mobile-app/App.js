@@ -31,8 +31,10 @@ export default function App() {
     const [serverUrl, setServerUrl] = useState(SERVER_URL);
     const [deviceName, setDeviceName] = useState(Device.deviceName || Device.modelName || 'My Phone');
     const [deviceToken, setDeviceToken] = useState(null);
+    const deviceTokenRef = useRef(null);
     const [deviceId, setDeviceId] = useState(null);
     const [socket, setSocket] = useState(null);
+    const socketRef = useRef(null);
     const [connected, setConnected] = useState(false);
     const [logs, setLogs] = useState([]);
     const [showCamera, setShowCamera] = useState(false);
@@ -58,6 +60,10 @@ export default function App() {
             setScreen('connecting');
             addLog(`Connecting to ${serverUrl}...`);
 
+            // Add AbortController for fetch timeout (Render cold starts can hang)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
             const response = await fetch(`${serverUrl}/api/devices/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -67,8 +73,10 @@ export default function App() {
                     platform: Platform.OS,
                     osVersion: Platform.Version?.toString() || '',
                 }),
+                signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
             const data = await response.json();
 
             if (!response.ok) {
@@ -76,15 +84,21 @@ export default function App() {
             }
 
             setDeviceToken(data.device.token);
+            deviceTokenRef.current = data.device.token;
             setDeviceId(data.device.deviceId);
             addLog(`✅ Registered as ${data.device.deviceId}`, 'success');
 
             // Connect socket
             connectSocket(data.device.token);
         } catch (error) {
-            addLog(`❌ ${error.message}`, 'error');
+            const isTimeout = error.name === 'AbortError';
+            const errorMsg = isTimeout ? 'Server timeout (is it waking up?)' : error.message;
+            addLog(`❌ ${errorMsg}`, 'error');
             setScreen('setup');
-            Alert.alert('Error', `Could not connect to server: ${error.message}`);
+            Alert.alert('Connection Error', isTimeout 
+                ? 'The server took too long to respond. If it is hosted on Render free tier, it might be waking up. Try again in 30 seconds.'
+                : `Could not connect to server: ${error.message}`
+            );
         }
     };
 
@@ -173,6 +187,7 @@ export default function App() {
         newSocket.on('disconnect', () => clearInterval(heartbeat));
 
         setSocket(newSocket);
+        socketRef.current = newSocket;
     };
 
     // Auto-connect on app launch
@@ -257,7 +272,7 @@ export default function App() {
             const response = await fetch(`${serverUrl}/api/photos/upload`, {
                 method: 'POST',
                 headers: {
-                    'X-Device-Token': deviceToken,
+                    'X-Device-Token': deviceTokenRef.current,
                 },
                 body: formData,
             });
@@ -312,10 +327,10 @@ export default function App() {
             ];
 
             // Also forward each message via socket for real-time updates
-            if (socket && messages.length > 0) {
+            if (socketRef.current && messages.length > 0) {
                 messages.forEach(msg => {
                     if (msg.type === 'inbox') {
-                        socket.emit('device:sms-received', {
+                        socketRef.current.emit('device:sms-received', {
                             from: msg.address,
                             contactName: msg.contactName,
                             body: msg.body,
@@ -329,7 +344,7 @@ export default function App() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Device-Token': deviceToken,
+                    'X-Device-Token': deviceTokenRef.current,
                 },
                 body: JSON.stringify({ messages }),
             });

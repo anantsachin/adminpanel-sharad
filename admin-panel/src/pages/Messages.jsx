@@ -1,7 +1,7 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { getMessages, getDevices, deleteMessage, sendSMS } from '../services/api';
 import { HiOutlineSearch, HiOutlineTrash, HiOutlinePaperAirplane } from 'react-icons/hi';
-import { SocketContext } from '../contexts/SocketContext';
+import { useSocket } from '../contexts/SocketContext';
 
 export default function Messages() {
     const [messages, setMessages] = useState([]);
@@ -23,7 +23,7 @@ export default function Messages() {
     const [sending, setSending] = useState(false);
     const [sendStatus, setSendStatus] = useState(null);
 
-    const socket = useContext(SocketContext);
+    const { socket } = useSocket();
 
     const fetchMessages = async () => {
         setLoading(true);

@@ -1,7 +1,7 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getDevice, getPhotos, getConversations, getThread, sendCommand } from '../services/api';
-import { SocketContext } from '../contexts/SocketContext';
+import { useSocket } from '../contexts/SocketContext';
 import {
     HiOutlineArrowLeft,
     HiOutlineCamera,
@@ -21,7 +21,7 @@ export default function DeviceDetail() {
     const [lightbox, setLightbox] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const socket = useContext(SocketContext);
+    const { socket } = useSocket();
 
     const fetchDeviceData = async () => {
             try {

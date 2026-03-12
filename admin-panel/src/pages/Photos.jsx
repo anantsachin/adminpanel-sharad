@@ -1,7 +1,7 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { getPhotos, getDevices, deletePhoto } from '../services/api';
 import { HiOutlineSearch, HiOutlineTrash } from 'react-icons/hi';
-import { SocketContext } from '../contexts/SocketContext';
+import { useSocket } from '../contexts/SocketContext';
 
 export default function Photos() {
     const [photos, setPhotos] = useState([]);
@@ -12,7 +12,7 @@ export default function Photos() {
     const [lightbox, setLightbox] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const socket = useContext(SocketContext);
+    const { socket } = useSocket();
 
     const fetchPhotos = async () => {
         try {
